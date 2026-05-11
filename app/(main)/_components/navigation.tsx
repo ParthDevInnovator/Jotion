@@ -1,15 +1,22 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ChevronLeft, MenuIcon } from "lucide-react";
+import { ChevronLeft, MenuIcon, PlusCircle, Search, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ElementRef, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { UserItem } from "./user-item";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Item } from "./Item";
+import { toast } from "sonner";
+import { DocumentList } from "./document-list";
 
 export const Navigation = () => {
   const pathname = usePathname();
   const isMobile = useMediaQuery("(max-width:768px)");
+  const create=useMutation(api.documents.create)
+
   const isResizingRef = useRef(true);
   const sidebarRef = useRef<ElementRef<"aside">>(null);
   const navbarRef = useRef<ElementRef<"div">>(null);
@@ -76,6 +83,16 @@ export const Navigation = () => {
        setTimeout(()=>setisResetting(false),300)
     }
    }
+   
+   const handleCreate=()=>{
+    const promise = create({title:"Untitled"});
+    toast.promise(promise,{
+      loading:"Creating a new note",
+      success:"New note created!",
+      error:"Failed to create a new note"
+    })
+   }
+  
   return (
     <>
       <aside
@@ -99,13 +116,26 @@ export const Navigation = () => {
         </div>
         <div>
          <UserItem/>
+         <Item
+         label="search"
+         icon={Search}
+         isSearch
+         onClick={()=>{}}
+         />
+         <Item
+         label="Settings"
+         icon={Settings}
+         isSearch
+         onClick={()=>{}}
+         />
+         <Item onClick={handleCreate} label="New page" icon={PlusCircle}/>
         </div>
         <div className="mt-4">
-          <p>Documents</p>
+          <DocumentList/>
         </div>
         <div
           onMouseDown={handleMouseDown}
-          onClick={() => {}}
+        
           className="opacity-0 group-hover/sidebar:opacity-100
        transition cursor-ew-resize absolute h-full w-1 bg-primary/10 right-0 top-0"
         />
