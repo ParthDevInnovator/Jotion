@@ -1,49 +1,68 @@
 "use client";
-import { useConvexAuth } from "convex/react";
-import { useScrollTop } from "@/hooks/use-scroll-top";
-import { cn } from "@/lib/utils";
-import { Logo } from "./Logo";
-import { SignInButton, UserButton } from "@clerk/clerk-react";
-import { ModeToggle } from "../../../components/mode-toggle";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/spinner";
-import Link from "next/link";
 
-export const Navbar = () => {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const scrolled = useScrollTop();
-  return (
-    <div
-      className={cn(
-        "z-50 bg-background dark:bg-[#1F1F1F] fixed top-0 flex items-center w-full p-6",
-        scrolled && "border-b shadow-sm",
-      )}
-    >
-      <Logo />
-      <div className="md:ml-auto md:justify-end justify-between w-full flex items-center gap-x-2">
-        {isLoading && <Spinner />}
-        {!isAuthenticated && !isLoading && (
-          <>
-            <SignInButton mode="modal ">
-              <Button variant="ghost" size="sm">
-                Log in
-              </Button>
-            </SignInButton>
-            <SignInButton mode="modal ">
-              <Button size="sm">Get Jotion free</Button>
-            </SignInButton>
-          </>
-        )}
-        {isAuthenticated && !isLoading && (
-          <>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/documents">Enter Jotion</Link>
-            </Button>
-            <UserButton />
-          </>
-        )}
-        <ModeToggle />
-      </div>
-    </div>
-  );
+import { useQuery } from "convex/react";
+import { useParams } from "next/navigation";
+import { MenuIcon } from "lucide-react";
+
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+
+import { Title } from "./title";
+import { Banner } from "./banner";
+import { Menu } from "./menu";
+import { Publish } from "./publish";
+
+interface NavbarProps {
+  isCollapsed: boolean;
+  onResetWidth: () => void;
 };
+
+export const Navbar = ({
+  isCollapsed,
+  onResetWidth
+}: NavbarProps) => {
+  const params = useParams();
+
+  const document = useQuery(api.documents.getById, {
+    documentId: params.documentId as Id<"documents">,
+  });
+
+  if (document === undefined) {
+    return (
+      <nav className="bg-background dark:bg-[#1F1F1F] px-3 py-2 w-full flex items-center justify-between">
+        <Title.Skeleton />
+        <div className="flex items-center gap-x-2">
+          <Menu.Skeleton />
+        </div>
+      </nav>
+    )
+  }
+
+  if (document === null) {
+    return null;
+  }
+
+  return (
+    <>
+      <nav className="bg-background dark:bg-[#1F1F1F] px-3 py-2 w-full flex items-center gap-x-4">
+        {isCollapsed && (
+          <MenuIcon
+            role="button"
+            onClick={onResetWidth}
+            className="h-6 w-6 text-muted-foreground"
+          />
+        )}
+        <div className="flex items-center justify-between w-full">
+          <Title initialData={document} />
+          <div className="flex items-center gap-x-2">
+            <Publish initialData={document} />
+            <Menu documentId={document._id} />
+          </div>
+        </div>
+      </nav>
+      {document.isArchived && (
+        <Banner documentId={document._id} />
+      )}
+    </>
+  )
+}
